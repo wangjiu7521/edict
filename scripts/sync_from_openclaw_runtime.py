@@ -89,8 +89,12 @@ def load_activity(session_file, limit=12):
             details = msg.get('details') or {}
             # If tool output is short, show it
             raw_content = msg.get('content', [])
-            first = raw_content[0] if raw_content else {}
-            content = first.get('text', '') if isinstance(first, dict) else str(first)
+            if isinstance(raw_content, list) and raw_content and isinstance(raw_content[0], dict):
+                content = raw_content[0].get('text', '')
+            elif isinstance(raw_content, str):
+                content = raw_content
+            else:
+                content = ''
             if len(content) < 50:
                 text = f"Tool '{tool}' returned: {content}"
             else:
