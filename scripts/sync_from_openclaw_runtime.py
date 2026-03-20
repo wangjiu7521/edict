@@ -88,7 +88,9 @@ def load_activity(session_file, limit=12):
             tool = msg.get('toolName', '-')
             details = msg.get('details') or {}
             # If tool output is short, show it
-            content = msg.get('content', [{'text': ''}])[0].get('text', '')
+            raw_content = msg.get('content', [])
+            first = raw_content[0] if raw_content else {}
+            content = first.get('text', '') if isinstance(first, dict) else str(first)
             if len(content) < 50:
                 text = f"Tool '{tool}' returned: {content}"
             else:
@@ -98,6 +100,8 @@ def load_activity(session_file, limit=12):
         elif role == 'assistant':
             text = ''
             for c in msg.get('content', []):
+                if not isinstance(c, dict):
+                    continue
                 if c.get('type') == 'text' and c.get('text'):
                     raw_text = c.get('text').strip()
                     # Clean up common prefixes
@@ -111,15 +115,17 @@ def load_activity(session_file, limit=12):
                 if len(summary) > 200:
                     summary = summary[:200] + '...'
                 rows.append({'at': ts, 'kind': 'assistant', 'text': summary})
-                
+
         elif role == 'user':
-             # Also show what user asked, can be context relevant
-             text = ''
-             for c in msg.get('content', []):
+            # Also show what user asked, can be context relevant
+            text = ''
+            for c in msg.get('content', []):
+                if not isinstance(c, dict):
+                    continue
                 if c.get('type') == 'text':
-                     text = c.get('text', '')[:100]
-             if text:
-                 rows.append({'at': ts, 'kind': 'user', 'text': f"User: {text}..."})
+                    text = c.get('text', '')[:100]
+            if text:
+                rows.append({'at': ts, 'kind': 'user', 'text': f"User: {text}..."})
 
         if len(rows) >= limit:
             break
